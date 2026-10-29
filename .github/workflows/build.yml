@@ -60,7 +60,27 @@ jobs:
               <path android:fillColor="#FFFFFF" android:pathData="M36,15 L39,23 L47,26 L39,29 L36,37 L33,29 L25,26 L33,23 Z"/>
           </vector>
           EOF_ICON
-          sed -i 's/<application$/<application android:icon="@drawable\/ic_launcher"/' app/src/main/AndroidManifest.xml
+          cat > app/src/main/AndroidManifest.xml <<'EOF_MANIFEST'
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+              <application
+                  android:allowBackup="true"
+                  android:label="CashFlow"
+                  android:icon="@drawable/ic_launcher"
+                  android:theme="@android:style/Theme.Material.Light.NoActionBar"
+                  android:usesCleartextTraffic="true">
+                  <activity
+                      android:name=".MainActivity"
+                      android:configChanges="orientation|screenSize|keyboardHidden"
+                      android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                      </intent-filter>
+                  </activity>
+              </application>
+          </manifest>
+          EOF_MANIFEST
+          python3 -c 'import xml.etree.ElementTree as ET; ET.parse("app/src/main/AndroidManifest.xml"); print("AndroidManifest.xml valid")'
 
       - name: Build APK
         run: gradle --no-daemon assembleDebug
