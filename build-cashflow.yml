@@ -1,0 +1,218 @@
+name: Build CashFlow APK
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/build.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - uses: android-actions/setup-android@v3
+      - name: Generate Android project
+        shell: bash
+        run: |
+          set -e
+          mkdir -p "$(dirname 'settings.gradle')"
+          cat > 'settings.gradle' <<'CASHFLOW_FILE_1_END'
+pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }
+dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); mavenCentral() } }
+rootProject.name = 'CashFlow'
+include ':app'
+CASHFLOW_FILE_1_END
+          mkdir -p "$(dirname 'build.gradle')"
+          cat > 'build.gradle' <<'CASHFLOW_FILE_4_END'
+plugins {
+    id 'com.android.application' version '8.7.3' apply false
+}
+CASHFLOW_FILE_4_END
+          mkdir -p "$(dirname 'gradle.properties')"
+          cat > 'gradle.properties' <<'CASHFLOW_FILE_7_END'
+org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8
+android.useAndroidX=true
+CASHFLOW_FILE_7_END
+          mkdir -p "$(dirname 'app/build.gradle')"
+          cat > 'app/build.gradle' <<'CASHFLOW_FILE_10_END'
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.cashflow.app'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'com.cashflow.app'
+        minSdk 23
+        targetSdk 28
+        versionCode 1
+        versionName '1.0'
+    }
+}
+CASHFLOW_FILE_10_END
+          mkdir -p "$(dirname 'app/src/main/AndroidManifest.xml')"
+          cat > 'app/src/main/AndroidManifest.xml' <<'CASHFLOW_FILE_13_END'
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application
+        android:allowBackup="true"
+        android:label="CashFlow"
+        android:theme="@android:style/Theme.Material.Light.NoActionBar"
+        android:usesCleartextTraffic="true">
+        <activity
+            android:name=".MainActivity"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>
+CASHFLOW_FILE_13_END
+          mkdir -p "$(dirname 'app/src/main/java/com/cashflow/app/MainActivity.java')"
+          cat > 'app/src/main/java/com/cashflow/app/MainActivity.java' <<'CASHFLOW_FILE_16_END'
+package com.cashflow.app;
+
+import android.app.Activity;
+import android.os.Bundle;
+import android.webkit.WebChromeClient;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
+import android.graphics.Color;
+import android.view.Window;
+
+public class MainActivity extends Activity {
+    @Override public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        getWindow().setStatusBarColor(Color.rgb(12, 18, 35));
+        getWindow().setNavigationBarColor(Color.rgb(12, 18, 35));
+        WebView web = new WebView(this);
+        web.setBackgroundColor(Color.rgb(10, 15, 30));
+        web.getSettings().setJavaScriptEnabled(true);
+        web.getSettings().setDomStorageEnabled(true);
+        web.setWebViewClient(new WebViewClient());
+        web.setWebChromeClient(new WebChromeClient());
+        setContentView(web);
+        web.loadUrl("file:///android_asset/index.html");
+    }
+    @Override public void onBackPressed() {
+        // Keep navigation inside the app; there are no external pages.
+        super.onBackPressed();
+    }
+}
+CASHFLOW_FILE_16_END
+          mkdir -p "$(dirname 'app/src/main/assets/index.html')"
+          cat > 'app/src/main/assets/index.html' <<'CASHFLOW_FILE_19_END'
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#0a0f1e"><title>CashFlow</title>
+<style>
+:root{--bg:#0a0f1e;--panel:#121a2e;--panel2:#17223b;--text:#f4f7ff;--muted:#8f9bb7;--green:#47e0ad;--red:#ff718b;--blue:#7b8cff;--gold:#ffc96b}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 20% 0%,#1b2850 0%,var(--bg) 48%);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,sans-serif;padding:0 0 90px}
+.app{max-width:520px;margin:auto;padding:20px 16px}.top{display:flex;justify-content:space-between;align-items:center;margin:5px 0 22px}.brand{font-weight:900;letter-spacing:2px;font-size:19px}.brand span{color:var(--green)}.month{font-size:12px;color:var(--muted);background:#18223b;padding:9px 11px;border-radius:12px}
+h1{font-size:25px;margin:0 0 5px;letter-spacing:-.5px}.sub{color:var(--muted);font-size:13px;margin-bottom:20px}
+.balance{padding:22px;border-radius:25px;background:linear-gradient(135deg,#5368e8,#7e5be8 60%,#a15ce5);box-shadow:0 16px 38px #6558d333;position:relative;overflow:hidden}.balance:after{content:"";position:absolute;width:160px;height:160px;border:1px solid #ffffff2b;border-radius:50%;right:-50px;top:-55px;box-shadow:0 0 0 22px #ffffff09,0 0 0 45px #ffffff07}.label{font-size:12px;opacity:.8}.amount{font-size:30px;font-weight:850;letter-spacing:-1px;margin:7px 0 15px;overflow-wrap:anywhere}.balrow{display:flex;gap:18px;font-size:12px}.balrow b{display:block;font-size:14px;margin-top:4px}
+.quick{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0 24px}.quick button{border:0;border-radius:17px;padding:15px;text-align:left;color:var(--text);font-weight:750;font-size:14px}.quick small{display:block;font-weight:500;opacity:.72;margin-top:5px}.incomeBtn{background:#123e3a;border:1px solid #2d8d78!important}.expenseBtn{background:#442032;border:1px solid #a64d68!important}
+.section{display:flex;align-items:center;justify-content:space-between;margin:23px 0 12px}.section h2{font-size:17px;margin:0}.section button,.ghost{background:#1b2743;border:1px solid #2c3b60;color:#cbd5ff;border-radius:10px;padding:8px 11px;font-size:12px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}.stat{background:var(--panel);border:1px solid #202c48;border-radius:17px;padding:14px}.stat .icon{font-size:17px}.stat p{color:var(--muted);font-size:11px;margin:8px 0 4px}.stat strong{font-size:16px;overflow-wrap:anywhere}.green{color:var(--green)}.red{color:var(--red)}
+.card{background:var(--panel);border:1px solid #202c48;border-radius:20px;padding:16px;margin-bottom:12px}.tabs{display:flex;background:#0c1325;padding:4px;border-radius:12px;gap:4px;margin-bottom:13px}.tabs button{flex:1;background:transparent;color:var(--muted);border:0;border-radius:9px;padding:10px;font-weight:700}.tabs button.active{background:#273657;color:#fff}
+form label{display:block;color:#aab6d0;font-size:12px;margin:12px 0 6px}input,select,textarea{width:100%;padding:12px 13px;border-radius:12px;border:1px solid #2b3858;background:#0b1224;color:var(--text);font:inherit;font-size:14px;outline:none}input:focus,select:focus,textarea:focus{border-color:var(--blue)}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.primary{width:100%;border:0;border-radius:13px;padding:14px;margin-top:16px;background:linear-gradient(100deg,#6579ff,#9b65ed);color:white;font-weight:800;font-size:14px}.hint{font-size:11px;color:var(--muted);line-height:1.5;margin-top:10px}
+.historyItem{display:flex;gap:11px;align-items:center;padding:13px 0;border-bottom:1px solid #222d47}.historyItem:last-child{border:0}.bubble{width:39px;height:39px;flex-shrink:0;display:grid;place-items:center;border-radius:13px;background:#153d37;font-size:18px}.bubble.out{background:#432033}.desc{min-width:0;flex:1}.desc b{font-size:13px;display:block;overflow-wrap:anywhere}.desc small{font-size:11px;color:var(--muted)}.right{text-align:right;white-space:nowrap}.right b{font-size:13px;display:block}.actions{display:flex;gap:6px;margin-top:5px;justify-content:flex-end}.actions button{font-size:10px;padding:5px 7px;border:1px solid #33405d;border-radius:7px;background:#1b2741;color:#cbd5ff}
+.pieWrap{display:flex;align-items:center;gap:18px}.pie{width:132px;height:132px;border-radius:50%;flex-shrink:0;background:conic-gradient(var(--green) 0 50%,#ffb85c 50% 100%);position:relative}.pie:after{content:"";position:absolute;inset:23px;background:var(--panel);border-radius:50%}.legend{flex:1;font-size:12px}.leg{display:flex;gap:7px;align-items:center;margin:10px 0;color:#c6cee1}.dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex-shrink:0}.legend b{display:block;color:white;margin-top:3px}
+.insight{border-radius:15px;background:#18243b;padding:13px;margin:9px 0;font-size:12px;line-height:1.55;color:#dce4f8}.insight strong{color:var(--gold)}.empty{text-align:center;color:var(--muted);font-size:12px;padding:24px 10px}.bottom{position:fixed;bottom:0;left:0;right:0;background:#0c1324ed;backdrop-filter:blur(15px);border-top:1px solid #202b45;display:flex;justify-content:center;z-index:5}.nav{max-width:520px;width:100%;display:flex;justify-content:space-around;padding:9px 4px calc(9px + env(safe-area-inset-bottom))}.nav button{background:none;border:0;color:#8491ae;font-size:10px;display:flex;flex-direction:column;align-items:center;gap:4px;padding:5px 12px}.nav button span{font-size:19px}.nav button.active{color:var(--green)}
+.page{display:none}.page.active{display:block}.filterrow{display:flex;gap:8px}.filterrow select{flex:1}.tiny{font-size:10px;color:var(--muted)}.danger{color:var(--red)!important}
+</style></head>
+<body><div class="app">
+<header class="top"><div class="brand">CASH<span>FLOW</span> ✦</div><div class="month" id="monthPill">BULAN INI</div></header>
+<div class="page active" id="home">
+<h1>Keuangan kamu.</h1><div class="sub">Pantau uang masuk, keluar, dan tujuanmu.</div>
+<div class="balance"><div class="label">TOTAL SALDO SAAT INI</div><div class="amount" id="balance">Rp0</div><div class="balrow"><div>Uang masuk<b id="totalIn">Rp0</b></div><div>Uang keluar<b id="totalOut">Rp0</b></div></div></div>
+<div class="quick"><button class="incomeBtn" onclick="openForm('in')">＋ Uang masuk<small>Catat pemasukan baru</small></button><button class="expenseBtn" onclick="openForm('out')">－ Uang keluar<small>Catat pengeluaran baru</small></button></div>
+<div class="section"><h2>Ringkasan bulan ini</h2><button onclick="showPage('recap')">Lihat recap ↗</button></div>
+<div class="stats"><div class="stat"><span class="icon">📈</span><p>Total pemasukan</p><strong class="green" id="monthIn">Rp0</strong></div><div class="stat"><span class="icon">🧾</span><p>Total pengeluaran</p><strong class="red" id="monthOut">Rp0</strong></div><div class="stat"><span class="icon">💎</span><p>Sisa bulan ini</p><strong id="monthNet">Rp0</strong></div><div class="stat"><span class="icon">🎯</span><p>Transaksi bulan ini</p><strong id="monthCount">0</strong></div></div>
+<div class="section"><h2>Transaksi terbaru</h2><button onclick="showPage('history')">Semua ↗</button></div><div class="card" id="recent"></div>
+</div>
+<div class="page" id="entry">
+<h1 id="formTitle">Catat transaksi</h1><div class="sub">Setiap catatan tersimpan di perangkat ini.</div>
+<div class="card"><div class="tabs"><button id="tabIn" class="active" onclick="setType('in')">＋ Pemasukan</button><button id="tabOut" onclick="setType('out')">－ Pengeluaran</button></div>
+<form id="txForm" onsubmit="saveTx(event)"><input type="hidden" id="editId"><label>Nominal (Rupiah)</label><input id="amount" type="number" min="1" step="1" placeholder="Contoh: 50000" required>
+<label>Nama / alasan transaksi</label><input id="desc" maxlength="90" placeholder="Contoh: gaji, makan siang, bensin" required>
+<div class="grid2"><div><label>Kategori</label><select id="category"></select></div><div><label>Tanggal</label><input id="date" type="date" required></div></div>
+<div id="priorityWrap"><label>Jenis pengeluaran</label><select id="priority"><option value="wajib">Kebutuhan wajib</option><option value="nonwajib">Tidak terlalu wajib</option></select><div class="hint">Wajib: makan pokok, tagihan, transport utama. Tidak terlalu wajib: jajan ekstra, hiburan, belanja impulsif.</div></div>
+<label>Catatan tambahan (opsional)</label><textarea id="note" rows="2" maxlength="180" placeholder="Detail tambahan..."></textarea>
+<button class="primary" type="submit" id="saveBtn">SIMPAN TRANSAKSI</button><button type="button" class="primary" id="cancelEdit" style="display:none;background:#28334d" onclick="resetForm()">BATAL EDIT</button></form></div>
+<div class="insight">💡 <strong>Tips:</strong> Catat transaksi sesegera mungkin agar recap dan saldo tetap akurat.</div>
+</div>
+<div class="page" id="history"><h1>Riwayat transaksi</h1><div class="sub">Cari, filter, edit, atau hapus catatanmu.</div><div class="card"><input id="search" placeholder="Cari alasan atau kategori..." oninput="renderHistory()"><div class="filterrow" style="margin-top:10px"><select id="filterType" onchange="renderHistory()"><option value="all">Semua transaksi</option><option value="in">Pemasukan</option><option value="out">Pengeluaran</option></select><select id="filterMonth" onchange="renderHistory()"></select></div></div><div class="card" id="historyList"></div><button class="primary" onclick="exportCSV()">EKSPOR RIWAYAT CSV</button><button class="primary" style="background:#26334e" onclick="backupData()">CADANGKAN DATA JSON</button><div class="hint">Data tersimpan lokal di HP ini. Ekspor/cadangkan secara berkala supaya kamu punya salinan.</div></div>
+<div class="page" id="recap"><h1>Recap bulanan</h1><div class="sub">Lihat pola pengeluaran dan temukan peluang hemat.</div><div class="card"><label>Pilih bulan</label><input id="recapMonth" type="month" onchange="renderRecap()"></div><div class="stats"><div class="stat"><p>Pemasukan</p><strong class="green" id="rIn">Rp0</strong></div><div class="stat"><p>Pengeluaran</p><strong class="red" id="rOut">Rp0</strong></div><div class="stat"><p>Sisa / defisit</p><strong id="rNet">Rp0</strong></div><div class="stat"><p>Tingkat tabungan</p><strong id="rRate">0%</strong></div></div>
+<div class="section"><h2>Wajib vs tidak wajib</h2></div><div class="card"><div class="pieWrap"><div class="pie" id="pie"></div><div class="legend"><div class="leg"><i class="dot" style="background:var(--green)"></i><div>Wajib<b id="rWajib">Rp0 · 0%</b></div></div><div class="leg"><i class="dot" style="background:#ffb85c"></i><div>Tidak terlalu wajib<b id="rNon">Rp0 · 0%</b></div></div></div></div><div class="hint">Diagram membandingkan pengeluaran yang sudah kamu tandai sebagai wajib dan tidak terlalu wajib.</div></div>
+<div class="section"><h2>Breakdown kategori</h2></div><div class="card" id="categoryBreakdown"></div><div class="section"><h2>💡 Saran hemat personal</h2></div><div id="tips"></div>
+<div class="section"><h2>Transaksi bulan terpilih</h2></div><div class="card" id="recapList"></div>
+</div>
+<div class="page" id="settings"><h1>Pengaturan</h1><div class="sub">Kelola data keuanganmu.</div><div class="card"><h3 style="margin-top:0">Data aplikasi</h3><div class="hint">Semua transaksi disimpan di penyimpanan lokal aplikasi (WebView). Menghapus data aplikasi dapat menghapus riwayat. Gunakan fitur cadangan secara berkala.</div><button class="primary" onclick="backupData()">UNDUH CADANGAN JSON</button><button class="primary" style="background:#58253a" onclick="clearAll()">HAPUS SEMUA TRANSAKSI</button></div><div class="card"><h3 style="margin-top:0">Cara pakai</h3><div class="hint">1. Tambahkan pemasukan dan pengeluaran.<br>2. Isi alasan, kategori, dan tanggal.<br>3. Tandai pengeluaran wajib atau tidak terlalu wajib.<br>4. Buka Recap untuk melihat diagram dan saran hemat.</div></div></div>
+</div>
+<nav class="bottom"><div class="nav"><button class="active" data-page="home" onclick="showPage('home')"><span>⌂</span>Beranda</button><button data-page="entry" onclick="openForm('in')"><span>＋</span>Catat</button><button data-page="history" onclick="showPage('history')"><span>◷</span>Riwayat</button><button data-page="recap" onclick="showPage('recap')"><span>◔</span>Recap</button><button data-page="settings" onclick="showPage('settings')"><span>⚙</span>Setelan</button></div></nav>
+<script>
+const $=id=>document.getElementById(id);
+const fmt=n=>'Rp'+Math.round(Number(n)||0).toLocaleString('id-ID');
+const today=()=>{let d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const monthNow=()=>today().slice(0,7);
+let tx=[],type='in';
+try{tx=JSON.parse(localStorage.getItem('cashflow_tx')||'[]');if(!Array.isArray(tx))tx=[]}catch(e){tx=[]}
+const catsIn=['Gaji','Bisnis','Freelance','Hadiah','Investasi','Lainnya'];
+const catsOut=['Makanan','Transportasi','Tagihan','Tempat tinggal','Kesehatan','Pendidikan','Keluarga','Belanja','Hiburan','Jajan / kopi','Langganan','Lainnya'];
+function persist(){localStorage.setItem('cashflow_tx',JSON.stringify(tx))}
+function showPage(p){document.querySelectorAll('.page').forEach(x=>x.classList.toggle('active',x.id===p));document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===p));if(p==='home')renderHome();if(p==='history')renderHistory();if(p==='recap')renderRecap();if(p==='entry')fillCategories()}
+function openForm(t){resetForm();setType(t);showPage('entry');$('date').value=today()}
+function setType(t){type=t;$('tabIn').classList.toggle('active',t==='in');$('tabOut').classList.toggle('active',t==='out');$('formTitle').textContent=t==='in'?'Catat pemasukan':'Catat pengeluaran';$('priorityWrap').style.display=t==='out'?'block':'none';fillCategories()}
+function fillCategories(){let list=type==='in'?catsIn:catsOut;let old=$('category').value;$('category').innerHTML=list.map(c=>`<option>${c}</option>`).join('');if(list.includes(old))$('category').value=old}
+function saveTx(e){e.preventDefault();let amount=Number($('amount').value);if(!Number.isFinite(amount)||amount<=0){alert('Nominal harus lebih dari 0.');return}
+let id=$('editId').value||String(Date.now())+Math.random().toString(16).slice(2,6);
+let item={id,type,amount,desc:$('desc').value.trim(),category:$('category').value,date:$('date').value,priority:type==='out'?$('priority').value:'income',note:$('note').value.trim(),created:Date.now()};
+if(!item.desc||!item.date){alert('Lengkapi alasan dan tanggal.');return}
+let ix=tx.findIndex(x=>x.id===id);if(ix>=0)tx[ix]=item;else tx.push(item);persist();resetForm();showPage('home');alert(ix>=0?'Transaksi berhasil diperbarui.':'Transaksi berhasil disimpan.')}
+function resetForm(){$('txForm').reset();$('editId').value='';$('date').value=today();$('saveBtn').textContent='SIMPAN TRANSAKSI';$('cancelEdit').style.display='none';setType('in')}
+function editTx(id){let x=tx.find(t=>t.id===id);if(!x)return;showPage('entry');setType(x.type);$('editId').value=x.id;$('amount').value=x.amount;$('desc').value=x.desc;$('category').value=x.category;$('date').value=x.date;$('priority').value=x.priority==='nonwajib'?'nonwajib':'wajib';$('note').value=x.note||'';$('saveBtn').textContent='SIMPAN PERUBAHAN';$('cancelEdit').style.display='block';}
+function deleteTx(id){if(!confirm('Hapus transaksi ini?'))return;tx=tx.filter(x=>x.id!==id);persist();renderHome();renderHistory();renderRecap()}
+function sortTx(a){return [...a].sort((x,y)=>(y.date||'').localeCompare(x.date||'')||(y.created||0)-(x.created||0))}
+function transactionHTML(x){let inc=x.type==='in';return `<div class="historyItem"><div class="bubble ${inc?'':'out'}">${inc?'↙':'↗'}</div><div class="desc"><b>${esc(x.desc)}</b><small>${esc(x.category)} · ${esc(x.date)}${!inc?' · '+(x.priority==='wajib'?'Wajib':'Tidak wajib'):''}</small>${x.note?`<small style="display:block">${esc(x.note)}</small>`:''}</div><div class="right"><b class="${inc?'green':'red'}">${inc?'+':'−'}${fmt(x.amount)}</b><div class="actions"><button onclick="editTx('${x.id}')">Edit</button><button onclick="deleteTx('${x.id}')">Hapus</button></div></div></div>`}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function sum(a){return a.reduce((n,x)=>n+x.amount,0)}
+function renderHome(){let ins=tx.filter(x=>x.type==='in'),outs=tx.filter(x=>x.type==='out'),m=tx.filter(x=>x.date&&x.date.startsWith(monthNow())),mi=sum(m.filter(x=>x.type==='in')),mo=sum(m.filter(x=>x.type==='out'));$('monthPill').textContent=new Date().toLocaleDateString('id-ID',{month:'long',year:'numeric'}).toUpperCase();$('balance').textContent=fmt(sum(ins)-sum(outs));$('totalIn').textContent=fmt(sum(ins));$('totalOut').textContent=fmt(sum(outs));$('monthIn').textContent=fmt(mi);$('monthOut').textContent=fmt(mo);$('monthNet').textContent=fmt(mi-mo);$('monthNet').className=mi>=mo?'green':'red';$('monthCount').textContent=m.length;$('recent').innerHTML=sortTx(m).slice(0,5).map(transactionHTML).join('')||'<div class="empty">Belum ada transaksi bulan ini.<br>Mulai catat uang masuk atau keluar.</div>'}
+function initFilters(){let months=[...new Set([monthNow(),...tx.map(x=>(x.date||'').slice(0,7)).filter(Boolean)])].sort().reverse();$('filterMonth').innerHTML='<option value="all">Semua bulan</option>'+months.map(m=>`<option value="${m}">${m}</option>`).join('')}
+function renderHistory(){initFilters();let q=$('search').value.toLowerCase(),ft=$('filterType').value,fm=$('filterMonth').value;let a=sortTx(tx).filter(x=>(ft==='all'||x.type===ft)&&(fm==='all'||x.date.startsWith(fm))&&[x.desc,x.category,x.note].join(' ').toLowerCase().includes(q));$('historyList').innerHTML=a.map(transactionHTML).join('')||'<div class="empty">Transaksi tidak ditemukan.</div>'}
+function renderRecap(){let m=$('recapMonth').value||monthNow();$('recapMonth').value=m;let a=tx.filter(x=>x.date&&x.date.startsWith(m)),ins=sum(a.filter(x=>x.type==='in')),outs=a.filter(x=>x.type==='out'),out=sum(outs),net=ins-out,w=sum(outs.filter(x=>x.priority==='wajib')),n=sum(outs.filter(x=>x.priority!=='wajib')),wp=out?w/out*100:0,np=out?n/out*100:0;
+$('rIn').textContent=fmt(ins);$('rOut').textContent=fmt(out);$('rNet').textContent=fmt(net);$('rNet').className=net>=0?'green':'red';$('rRate').textContent=ins>0?Math.round((net/ins)*100)+'%':'—';$('rWajib').textContent=fmt(w)+' · '+Math.round(wp)+'%';$('rNon').textContent=fmt(n)+' · '+Math.round(np)+'%';$('pie').style.background=out?`conic-gradient(var(--green) 0 ${wp}%, #ffb85c ${wp}% 100%)`:'conic-gradient(#26334e 0 100%)';
+let by={};outs.forEach(x=>by[x.category]=(by[x.category]||0)+x.amount);let keys=Object.keys(by).sort((a,b)=>by[b]-by[a]);$('categoryBreakdown').innerHTML=keys.length?keys.map(k=>`<div style="margin:11px 0"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px"><span>${esc(k)}</span><b>${fmt(by[k])}</b></div><div style="height:6px;border-radius:10px;background:#28334e;overflow:hidden"><div style="height:100%;width:${out?by[k]/out*100:0}%;background:linear-gradient(90deg,#6f82ff,#b16df0);border-radius:10px"></div></div></div>`).join(''):'<div class="empty">Belum ada pengeluaran untuk bulan ini.</div>';
+let tips=[];if(!out)tips.push('Mulai catat pengeluaran agar saran hemat bisa dibuat dari kebiasaanmu.');else{if(np>=40)tips.push(`Pengeluaran tidak terlalu wajib mencapai <strong>${Math.round(np)}%</strong> dari pengeluaran. Coba tetapkan batas kategori ini dan kurangi 10–20% bulan depan.`);if(keys[0]&&by[keys[0]]/out>.35)tips.push(`Kategori <strong>${esc(keys[0])}</strong> paling besar (${fmt(by[keys[0]])}). Cek apakah ada pembelian yang bisa ditunda atau alternatif yang lebih murah.`);let subs=outs.filter(x=>/langganan|jajan|kopi|hiburan|belanja/i.test(x.category));if(subs.length)tips.push(`Ada ${subs.length} transaksi di kategori yang sering bisa dikendalikan (jajan/hiburan/langganan/belanja). Evaluasi mana yang benar-benar memberi manfaat.`);if(ins>0&&out>ins)tips.push('<strong>Waspada:</strong> pengeluaran lebih besar daripada pemasukan bulan ini. Tunda pembelian non-esensial dan prioritaskan tagihan pokok.');if(!tips.length)tips.push('Bagus! Tetapkan batas pengeluaran mingguan dan sisihkan tabungan di awal saat pemasukan diterima.');}
+tips.push('Saran umum: gunakan aturan tunggu 24 jam untuk belanja impulsif, siapkan anggaran jajan mingguan, dan cek langganan yang jarang dipakai.');$('tips').innerHTML=tips.map(t=>`<div class="insight">✦ ${t}</div>`).join('');$('recapList').innerHTML=sortTx(a).map(transactionHTML).join('')||'<div class="empty">Belum ada transaksi pada bulan ini.</div>'}
+function download(name,content,type){let blob=new Blob([content],{type}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+function exportCSV(){let rows=[['Tanggal','Jenis','Nominal','Alasan','Kategori','Prioritas','Catatan'],...sortTx(tx).map(x=>[x.date,x.type==='in'?'Pemasukan':'Pengeluaran',x.amount,x.desc,x.category,x.priority,x.note||''])];let csv=rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');download('cashflow-riwayat.csv','\ufeff'+csv,'text/csv;charset=utf-8')}
+function backupData(){download('cashflow-backup-'+today()+'.json',JSON.stringify({app:'CashFlow',exportedAt:new Date().toISOString(),transactions:tx},null,2),'application/json')}
+function clearAll(){if(!confirm('Yakin hapus SEMUA transaksi? Tindakan ini tidak bisa dibatalkan. Cadangkan data dulu jika diperlukan.'))return;tx=[];persist();renderHome();renderHistory();renderRecap();alert('Semua transaksi dihapus.')}
+$('date').value=today();$('recapMonth').value=monthNow();fillCategories();renderHome();renderHistory();renderRecap();
+</script></body></html>
+CASHFLOW_FILE_19_END
+      - name: Install Android SDK packages
+        run: |
+          sdkmanager "platform-tools"
+          sdkmanager "platforms;android-35"
+          sdkmanager "build-tools;35.0.0"
+      - name: Build debug APK
+        run: gradle --no-daemon assembleDebug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CashFlow-Android-APK
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
